@@ -50,16 +50,18 @@ zend_object_value gobject_paramspec_object_new(zend_class_entry *ce TSRMLS_DC)
 {
 	zend_object_value retval;
 	gobject_paramspec_object *object;
-	zval *tmp;
+	//zval *tmp;
 
 	object = emalloc(sizeof(gobject_paramspec_object));
 	object->std.ce = ce;
 	object->std.guards = NULL;
 	object->paramspec = NULL;
 
-	ALLOC_HASHTABLE(object->std.properties);
-	zend_hash_init(object->std.properties, zend_hash_num_elements(&ce->default_properties), NULL, ZVAL_PTR_DTOR, 0);
+	//ALLOC_HASHTABLE(object->std.properties);
+	//zend_hash_init(object->std.properties, zend_hash_num_elements(&ce->default_properties), NULL, ZVAL_PTR_DTOR, 0);
+        object_properties_init(&(object->std), ce);
 
+        /*
 	zend_hash_copy(
 		object->std.properties,
 		&ce->default_properties,
@@ -67,6 +69,7 @@ zend_object_value gobject_paramspec_object_new(zend_class_entry *ce TSRMLS_DC)
 		(void *) &tmp,
 		sizeof(zval *)
 	);
+        */
 
 	retval.handle = zend_objects_store_put(
 		object,

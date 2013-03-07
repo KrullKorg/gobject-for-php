@@ -79,15 +79,7 @@ static zend_object_handlers *php_gobject_signal_handlers;
 
 void gobject_signal_free_storage(gobject_signal_object *intern TSRMLS_DC)
 {
-	if (intern->std.guards) {
-		zend_hash_destroy(intern->std.guards);
-		FREE_HASHTABLE(intern->std.guards);
-	}
-	
-	if (intern->std.properties) {
-		zend_hash_destroy(intern->std.properties);
-		FREE_HASHTABLE(intern->std.properties);
-	}
+        zend_object_std_dtor(&intern->std TSRMLS_CC);
 
 	if (intern->param_types) {
 		zval_ptr_dtor(&intern->param_types);
@@ -114,20 +106,8 @@ zend_object_value gobject_signal_object_new(zend_class_entry *ce TSRMLS_DC)
 	gobject_signal_object *object;
 
 	object = emalloc(sizeof(gobject_signal_object));
-	object->std.ce = ce;
-	object->std.guards = NULL;
-
-	ALLOC_HASHTABLE(object->std.properties);
-	zend_hash_init(object->std.properties, zend_hash_num_elements(&ce->default_properties), NULL, ZVAL_PTR_DTOR, 0);
-
-	zval *tmp;
-	zend_hash_copy(
-		object->std.properties,
-		&ce->default_properties,
-		(copy_ctor_func_t) zval_add_ref,
-		(void *) &tmp,
-		sizeof(zval *)
-	);
+        zend_object_std_init(&object->std, ce TSRMLS_CC);
+        object_properties_init(&object->std, ce);
 
 	object->signal_id = 0;
 	object->flags = 0;
@@ -151,7 +131,7 @@ zend_object_value gobject_signal_object_new(zend_class_entry *ce TSRMLS_DC)
 }
 
 
-zval *php_gobject_signal_read_property(zval *zobject, zval *prop, int type TSRMLS_DC)
+zval *php_gobject_signal_read_property(zval *zobject, zval *prop, int type, const struct _zend_literal *key TSRMLS_DC)
 {
 	const char *propname = Z_STRVAL_P(prop);
 	int proplen = Z_STRLEN_P(prop);
@@ -171,7 +151,7 @@ zval *php_gobject_signal_read_property(zval *zobject, zval *prop, int type TSRML
 	}
 }
 
-void php_gobject_signal_write_property(zval *zobject, zval *prop, zval *value TSRMLS_DC)
+void php_gobject_signal_write_property(zval *zobject, zval *prop, zval *value, const struct _zend_literal *key TSRMLS_DC)
 {
 	const char *propname = Z_STRVAL_P(prop);
 	int proplen = Z_STRLEN_P(prop);
@@ -186,7 +166,7 @@ void php_gobject_signal_write_property(zval *zobject, zval *prop, zval *value TS
 	}
 }
 
-zval **php_gobject_signal_get_property_ptr_ptr(zval *object, zval *member TSRMLS_DC)
+zval **php_gobject_signal_get_property_ptr_ptr(zval *object, zval *member, const struct _zend_literal *key TSRMLS_DC)
 {
 	// we don't want to provide direct access to underlying properties
 	return NULL;
@@ -200,8 +180,7 @@ zend_object_value php_gobject_signal_clone(zval *original_zval TSRMLS_DC)
 
 	gobject_signal_object *object = emalloc(sizeof(gobject_signal_object));
 
-	object->std.ce = original->std.ce;
-	object->std.guards = original->std.guards;
+        zend_object_std_init(&object->std, original->std.ce TSRMLS_CC);
 
 	ALLOC_HASHTABLE(object->std.properties);
 	zend_hash_init(object->std.properties, zend_hash_num_elements(original->std.properties), NULL, ZVAL_PTR_DTOR, 0);

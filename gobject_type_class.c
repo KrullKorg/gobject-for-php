@@ -66,16 +66,7 @@ void gobject_type_free_storage(gobject_type_object *intern TSRMLS_DC)
 	zval_ptr_dtor(&intern->properties);
 	zval_ptr_dtor(&intern->signals);
 	zval_ptr_dtor(&intern->interfaces);
-
-	if (intern->std.guards) {
-		zend_hash_destroy(intern->std.guards);
-		FREE_HASHTABLE(intern->std.guards);		
-	}
-	
-	if (intern->std.properties) {
-		zend_hash_destroy(intern->std.properties);
-		FREE_HASHTABLE(intern->std.properties);
-	}
+        zend_object_std_dtor(&intern->std TSRMLS_CC);
 
 	efree(intern);
 }
@@ -86,20 +77,8 @@ zend_object_value gobject_type_object_new(zend_class_entry *ce TSRMLS_DC)
 	gobject_type_object *object;
 
 	object = emalloc(sizeof(gobject_type_object));
-	object->std.ce = ce;
-	object->std.guards = NULL;
-
-	ALLOC_HASHTABLE(object->std.properties);
-	zend_hash_init(object->std.properties, zend_hash_num_elements(&ce->default_properties), NULL, ZVAL_PTR_DTOR, 0);
-
-	zval *tmp;
-	zend_hash_copy(
-		object->std.properties,
-		&ce->default_properties,
-		(copy_ctor_func_t) zval_add_ref,
-		(void *) &tmp,
-		sizeof(zval *)
-	);
+        zend_object_std_init(&object->std, ce TSRMLS_CC);
+        object_properties_init(&object->std, ce);
 
 	object->gtype = 0;
 	object->parent = 0;
@@ -123,7 +102,7 @@ zend_object_value gobject_type_object_new(zend_class_entry *ce TSRMLS_DC)
 	return retval;
 }
 
-zval *php_gobject_type_read_property(zval *zobject, zval *prop, int type TSRMLS_DC)
+zval *php_gobject_type_read_property(zval *zobject, zval *prop, int type, const struct _zend_literal *key TSRMLS_DC)
 {
 	const char *propname = Z_STRVAL_P(prop);
 	int proplen = Z_STRLEN_P(prop);
@@ -152,7 +131,7 @@ zval *php_gobject_type_read_property(zval *zobject, zval *prop, int type TSRMLS_
 	}
 }
 
-void php_gobject_type_write_property(zval *zobject, zval *prop, zval *value TSRMLS_DC)
+void php_gobject_type_write_property(zval *zobject, zval *prop, zval *value, const struct _zend_literal *key TSRMLS_DC)
 {
 	const char *propname = Z_STRVAL_P(prop);
 	int proplen = Z_STRLEN_P(prop);
@@ -180,7 +159,7 @@ void php_gobject_type_write_property(zval *zobject, zval *prop, zval *value TSRM
 	}
 }
 
-zval **php_gobject_type_get_property_ptr_ptr(zval *object, zval *member TSRMLS_DC)
+zval **php_gobject_type_get_property_ptr_ptr(zval *object, zval *member, const struct _zend_literal *key TSRMLS_DC)
 {
 	// we don't want to provide direct access to underlying properties
 	return NULL;
@@ -250,7 +229,7 @@ PHP_METHOD(Glib_GObject_Type, from)
 		return;
 	}
 
-	char *classname = NULL;
+	const char *classname = NULL;
 	zend_uint classname_len = 0;
 
 	if (Z_TYPE_P(input) == IS_STRING) {

@@ -3,6 +3,8 @@ PHP_ARG_WITH(gobject, for gobject support,
 
 if test "$PHP_GOBJECT" != "no"; then
 
+  CFLAGS="$CFLAGS -std=gnu99"
+
   PHP_SUBST(GOBJECT_SHARED_LIBADD)
   AC_DEFINE(HAVE_GOBJECT, 1, [ ])
 

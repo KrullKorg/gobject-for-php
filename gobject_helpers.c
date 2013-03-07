@@ -27,7 +27,8 @@
 
 static zend_bool zhashtable_to_gvalue(HashTable *zhash, GValue *gvalue TSRMLS_DC)
 {
-	GValueArray *array = g_value_array_new(zend_hash_num_elements(zhash));
+	GArray *array = g_array_sized_new(FALSE, TRUE, sizeof(GValue), zend_hash_num_elements(zhash));
+        g_array_set_clear_func(array, (GDestroyNotify)g_value_unset);
 
 	HashPosition iterator;
 	zval **tmp_zvalue;
@@ -37,12 +38,12 @@ static zend_bool zhashtable_to_gvalue(HashTable *zhash, GValue *gvalue TSRMLS_DC
 		GValue tmp_gvalue = {0,};
 
 		if (FALSE == zval_to_gvalue(*tmp_zvalue, &tmp_gvalue, 1 TSRMLS_CC)) {
-			g_value_array_free(array);
+			g_array_free(array, TRUE);
 			return FALSE;
 		}
 
-		g_value_array_append(array, &tmp_gvalue);
-		g_value_unset(&tmp_gvalue);
+		g_array_append_val(array, tmp_gvalue);
+		//g_value_unset(&tmp_gvalue);
 
 		zend_hash_move_forward_ex(zhash, &iterator);
 	}
@@ -94,7 +95,7 @@ zend_bool zval_to_gvalue(const zval *zvalue, GValue *gvalue, zend_bool init TSRM
 
 		case IS_CONSTANT_ARRAY:
 		case IS_ARRAY:
-			type = G_TYPE_VALUE_ARRAY;
+			type = G_TYPE_ARRAY;
 		break;
 
 		case IS_OBJECT:
@@ -158,7 +159,7 @@ zend_bool zval_with_gtype_to_gvalue(GType type, const zval *zvalue, GValue *gval
 		case IS_ARRAY:
 		case IS_CONSTANT_ARRAY:
 			if (init) {
-				g_value_init(gvalue, G_TYPE_VALUE_ARRAY);
+				g_value_init(gvalue, G_TYPE_ARRAY);
 			}
 			return zhashtable_to_gvalue(Z_ARRVAL_P(zvalue), gvalue TSRMLS_CC);
 			break;
@@ -255,7 +256,7 @@ zend_bool gvalue_with_gtype_to_zval(GType type, const GValue *gvalue, zval *zval
 
 		return TRUE;
 	} else if (type == G_TYPE_CHAR || type == G_TYPE_PARAM_CHAR) {
-		gchar val = g_value_get_char(gvalue);
+		guint8 val = g_value_get_schar(gvalue);
 		ZVAL_LONG(zvalue, val);
 		return TRUE;
 	} else if (type == G_TYPE_UCHAR || type == G_TYPE_PARAM_UCHAR) {
@@ -448,7 +449,7 @@ zend_bool php_gobject_zval_to_giarg(zval *zvalue, GIArgInfo *arg_info, GIArgumen
 			if (gtype == G_TYPE_VALUE) {
 				GValue gvalue = { 0, };
 
-				if (zval_to_gvalue(zvalue, &gvalue, false TSRMLS_CC)) {
+				if (zval_to_gvalue(zvalue, &gvalue, 0 TSRMLS_CC)) {
 					giarg->v_pointer = g_boxed_copy(G_TYPE_VALUE, &gvalue);
 					g_value_unset(&gvalue);
 				} else {

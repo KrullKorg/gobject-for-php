@@ -82,18 +82,9 @@ void gobject_gobject_free_storage(gobject_gobject_object *intern TSRMLS_DC)
 	g_slist_free(intern->closures);
 	intern->closures = NULL;
 
-	if (intern->std.guards) {
-		zend_hash_destroy(intern->std.guards);
-		FREE_HASHTABLE(intern->std.guards);
-	}
-
-	if (intern->std.properties) {
-		zend_hash_destroy(intern->std.properties);
-		FREE_HASHTABLE(intern->std.properties);
-	}
+        zend_object_std_dtor(&intern->std TSRMLS_CC);
 
 	efree(intern);
-	// php_printf("<= DONE\n");
 }
 
 zend_object_value gobject_gobject_object_new(zend_class_entry *ce TSRMLS_DC)
@@ -103,20 +94,8 @@ zend_object_value gobject_gobject_object_new(zend_class_entry *ce TSRMLS_DC)
 	gobject_gobject_object *object;
 
 	object = emalloc(sizeof(gobject_gobject_object));
-	object->std.ce = ce;
-	object->std.guards = NULL;
-
-	ALLOC_HASHTABLE(object->std.properties);
-	zend_hash_init(object->std.properties, zend_hash_num_elements(&ce->default_properties), NULL, ZVAL_PTR_DTOR, 0);
-
-	zval *tmp;
-	zend_hash_copy(
-		object->std.properties,
-		&ce->default_properties,
-		(copy_ctor_func_t) zval_add_ref,
-		(void *) &tmp,
-		sizeof(zval *)
-	);
+        zend_object_std_init(&object->std, ce TSRMLS_CC);
+        object_properties_init(&object->std, ce);
 
 	object->closures = g_slist_alloc();
 	object->gobject = NULL; // this is later assigned either in constructor or from external source
@@ -155,7 +134,7 @@ HashTable *php_gobject_gobject_get_properties(zval *object TSRMLS_DC)
 	return NULL;
 }
 
-zval *php_gobject_gobject_read_property(zval *zobject, zval *prop, int type TSRMLS_DC)
+zval *php_gobject_gobject_read_property(zval *zobject, zval *prop, int type, const struct _zend_literal *key TSRMLS_DC)
 {
 	// php_printf("reading property (zend)\n");
 
@@ -179,7 +158,7 @@ zval *php_gobject_gobject_read_property(zval *zobject, zval *prop, int type TSRM
 	return retval;
 }
 
-void php_gobject_gobject_write_property(zval *zobject, zval *prop, zval *value TSRMLS_DC)
+void php_gobject_gobject_write_property(zval *zobject, zval *prop, zval *value, const struct _zend_literal *key TSRMLS_DC)
 {
 	// php_printf("writing property (zend)\n");
 
@@ -201,7 +180,7 @@ void php_gobject_gobject_write_property(zval *zobject, zval *prop, zval *value T
 	g_value_unset(&gvalue);
 }
 
-zval **php_gobject_gobject_get_property_ptr_ptr(zval *object, zval *member TSRMLS_DC)
+zval **php_gobject_gobject_get_property_ptr_ptr(zval *object, zval *member, const struct _zend_literal *key TSRMLS_DC)
 {
 	// we don't want to provide direct access to underlying properties
 	return NULL;
