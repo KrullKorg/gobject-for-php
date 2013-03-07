@@ -33,15 +33,7 @@ void gobject_paramspec_free_storage(gobject_paramspec_object *intern TSRMLS_DC)
 		g_param_spec_unref(intern->paramspec);
 	}
 
-	if (intern->std.guards) {
-		zend_hash_destroy(intern->std.guards);
-		FREE_HASHTABLE(intern->std.guards);		
-	}
-	
-	if (intern->std.properties) {
-		zend_hash_destroy(intern->std.properties);
-		FREE_HASHTABLE(intern->std.properties);
-	}
+        zend_object_std_dtor(&intern->std TSRMLS_CC);
 
 	efree(intern);
 }
@@ -53,23 +45,10 @@ zend_object_value gobject_paramspec_object_new(zend_class_entry *ce TSRMLS_DC)
 	//zval *tmp;
 
 	object = emalloc(sizeof(gobject_paramspec_object));
-	object->std.ce = ce;
-	object->std.guards = NULL;
+        zend_object_std_init(&object->std, ce TSRMLS_CC);
+        object_properties_init(&object->std, ce);
+
 	object->paramspec = NULL;
-
-	//ALLOC_HASHTABLE(object->std.properties);
-	//zend_hash_init(object->std.properties, zend_hash_num_elements(&ce->default_properties), NULL, ZVAL_PTR_DTOR, 0);
-        object_properties_init(&(object->std), ce);
-
-        /*
-	zend_hash_copy(
-		object->std.properties,
-		&ce->default_properties,
-		(copy_ctor_func_t) zval_add_ref,
-		(void *) &tmp,
-		sizeof(zval *)
-	);
-        */
 
 	retval.handle = zend_objects_store_put(
 		object,

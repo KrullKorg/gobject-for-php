@@ -66,6 +66,7 @@ void gobject_type_free_storage(gobject_type_object *intern TSRMLS_DC)
 	zval_ptr_dtor(&intern->properties);
 	zval_ptr_dtor(&intern->signals);
 	zval_ptr_dtor(&intern->interfaces);
+
         zend_object_std_dtor(&intern->std TSRMLS_CC);
 
 	efree(intern);
@@ -97,6 +98,7 @@ zend_object_value gobject_type_object_new(zend_class_entry *ce TSRMLS_DC)
 		NULL
 		TSRMLS_CC
 	);
+
 	retval.handlers = php_gobject_type_handlers;
 
 	return retval;
