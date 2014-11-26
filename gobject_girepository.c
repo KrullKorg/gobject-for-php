@@ -182,7 +182,7 @@ static zend_function_entry* gobject_girepository_get_methods(GIObjectInfo *info 
 		GIFunctionInfo *m_info = g_object_info_get_method(info, i);
 		GIFunctionInfoFlags flags = g_function_info_get_flags(m_info);
 
-		if (flags & GI_FUNCTION_IS_METHOD) {
+		if (flags == 0 || flags & GI_FUNCTION_IS_METHOD) {
 			const gchar *name = g_base_info_get_name(m_info);
 
 			zend_function_entry fe = GOBJECT_PHP_NAMED_FE(name, PHP_FN(gobject_universal_method), NULL);
