@@ -525,12 +525,52 @@ zend_bool php_gobject_giarg_to_zval(GITypeInfo *type_info, GIArgument *src, zval
 	GITypeTag type_tag = g_type_info_get_tag(type_info);
 
 	switch (type_tag) {
+		case GI_TYPE_TAG_VOID:
+			ZVAL_NULL(return_value);
+		break;
+
+		case GI_TYPE_TAG_BOOLEAN:
+			ZVAL_BOOL(return_value, src->v_boolean);
+		break;
+
+		case GI_TYPE_TAG_INT8:
+			ZVAL_LONG(return_value, src->v_int8);
+		break;
+
+		case GI_TYPE_TAG_UINT8:
+			ZVAL_LONG(return_value, src->v_uint8);
+		break;
+
+		case GI_TYPE_TAG_INT16:
+			ZVAL_LONG(return_value, src->v_int16);
+		break;
+
+		case GI_TYPE_TAG_UINT16:
+			ZVAL_LONG(return_value, src->v_uint16);
+		break;
+
+		case GI_TYPE_TAG_INT32:
+			ZVAL_LONG(return_value, src->v_int32);
+		break;
+
+		case GI_TYPE_TAG_UINT32:
+			ZVAL_LONG(return_value, src->v_uint32);
+		break;
+
+		case GI_TYPE_TAG_INT64:
+			ZVAL_LONG(return_value, src->v_int64);
+		break;
+
+		case GI_TYPE_TAG_UINT64:
+			ZVAL_LONG(return_value, src->v_uint64);
+		break;
+
 		case GI_TYPE_TAG_UTF8:
 			ZVAL_STRING(return_value, src->v_pointer, 1);
 		break;
 
 		default:
-			php_error(E_WARNING, "Conversion of this type is not implemented");
+			php_error(E_WARNING, "Conversion of this type (%s) is not implemented", g_type_tag_to_string(type_tag));
 			ZVAL_NULL(return_value);
 			return FALSE;
 		break;
