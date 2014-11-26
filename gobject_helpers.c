@@ -93,7 +93,7 @@ zend_bool zval_to_gvalue(const zval *zvalue, GValue *gvalue, zend_bool init TSRM
 			type = G_TYPE_STRING;
 		break;
 
-		case IS_CONSTANT_ARRAY:
+		case IS_CONSTANT_AST:
 		case IS_ARRAY:
 			type = G_TYPE_ARRAY;
 		break;
@@ -157,7 +157,7 @@ zend_bool zval_with_gtype_to_gvalue(GType type, const zval *zvalue, GValue *gval
 			break;
 
 		case IS_ARRAY:
-		case IS_CONSTANT_ARRAY:
+		case IS_CONSTANT_AST:
 			if (init) {
 				g_value_init(gvalue, G_TYPE_ARRAY);
 			}

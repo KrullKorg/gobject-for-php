@@ -289,15 +289,14 @@ static int glib_gobject_type_register_signal(zend_object_iterator *iter, gobject
 	zval **signal_p = NULL;
 	zend_user_it_get_current_data(iter, &signal_p TSRMLS_CC);
 
-	char *key;
+	zval key;
 	uint key_len;
-	zend_user_it_get_current_key(iter, &key, &key_len, NULL TSRMLS_CC);
+	zend_user_it_get_current_key(iter, &key TSRMLS_DC);
 
 	gobject_signal_object *gsignal = (gobject_signal_object *)zend_objects_get_address(*signal_p TSRMLS_CC);
 
 	if (gsignal->signal_id > 0) {
 		php_error(E_ERROR, "This signal associated with \"%s\" name is already registered. Clone object before reuse", key);
-		efree(key);
 
 		return ZEND_HASH_APPLY_STOP;
 	}
@@ -340,7 +339,7 @@ static int glib_gobject_type_register_signal(zend_object_iterator *iter, gobject
 	}
 
 	gsignal->signal_id = g_signal_newv(
-		key, object->gtype, gsignal->flags,				// name, class, flags
+		(const gchar *)Z_STRVAL(key), object->gtype, gsignal->flags,				// name, class, flags
 		class_closure,									// default closure
 		accu, NULL,										// accu + data
 		php_gobject_closure_marshal,					// marshaller
@@ -353,8 +352,6 @@ static int glib_gobject_type_register_signal(zend_object_iterator *iter, gobject
 		efree(param_types);
 	}
 
-	efree(key);
-
 	return ZEND_HASH_APPLY_KEEP;
 }
 
@@ -363,21 +360,17 @@ static int glib_gobject_type_register_property(zend_object_iterator *iter, GObje
 	zval **pspec_p = NULL;
 	zend_user_it_get_current_data(iter, &pspec_p TSRMLS_CC);
 
-	char *key = NULL;
+	zval key;
 	uint key_len;
-	ulong int_key;
-	zend_user_it_get_current_key(iter, &key, &key_len, &int_key TSRMLS_CC);
+	static ulong int_key = 0;
+	zend_user_it_get_current_key(iter, &key TSRMLS_DC);
 
 	GObjectClass *type_class = *type_class_ptr;
 
 	gobject_paramspec_object *gpspec = (gobject_paramspec_object *)zend_objects_get_address(*pspec_p TSRMLS_CC);
 	GParamSpec *pspec = gpspec->paramspec;
 
-	g_object_class_install_property(type_class, int_key + 1, pspec);
-
-	if (key) {
-		efree(key);
-	}
+	g_object_class_install_property(type_class, ++int_key, pspec);
 
 	return ZEND_HASH_APPLY_KEEP;
 }
