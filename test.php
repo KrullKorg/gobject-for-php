@@ -1,4 +1,7 @@
 <?php
+var_dump(GIRepository\load_ns('GObject'));
+var_dump(GIRepository\load_ns('Gio'));
+
 use GObject\ParamSpec as GParamSpec;
 
 $type = new GObject\Type;
@@ -40,9 +43,6 @@ echo "boolean: "; var_dump($obj->boolean);
 echo "string:  "; var_dump($obj->string);
 echo "unichar: "; var_dump($obj->unichar);
 
-
-var_dump(GIRepository\load_ns('GObject'));
-var_dump(GIRepository\load_ns('Gio'));
 
 // echo "### reflection\n";
 // $rc = new ReflectionClass('Gio\InputStream');
