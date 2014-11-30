@@ -244,6 +244,57 @@ void static gobject_girepository_load_class(GIObjectInfo *info TSRMLS_DC)
 	}
 }
 
+void static gobject_girepository_load_struct(GIStructInfo *s_info TSRMLS_DC)
+{
+	char *phpclass = namespaced_name(g_base_info_get_namespace(s_info), g_base_info_get_name(s_info), FALSE);
+	if (!g_struct_info_is_gtype_struct(s_info))
+		{
+			gint fields;
+			gint i;
+			GIArgument giarg;
+
+			fields = g_struct_info_get_n_fields (s_info);
+			if (fields != 0)
+				{
+					// Is it loaded?
+					zend_class_entry *class_ce = zend_fetch_class(phpclass, strlen(phpclass), ZEND_FETCH_CLASS_NO_AUTOLOAD TSRMLS_CC);
+
+					if (class_ce) {
+						// already registered
+						efree(phpclass);
+						return;
+					}
+
+					/* create a generic class */
+
+					// Init PHP class
+					zend_class_entry ce;
+
+					INIT_CLASS_ENTRY_EX(ce, phpclass, strlen(phpclass), NULL);
+
+					zend_class_entry *target = zend_register_internal_class_ex(&ce, NULL, NULL TSRMLS_CC);
+
+					for (i = 0; i < fields; i++)
+						{
+							GIFieldInfo *f_info = g_struct_info_get_field (s_info, i);
+							GITypeInfo *f_tinfo = g_field_info_get_type (f_info);
+
+							zval zval;
+							if (php_gobject_giarg_to_zval(f_tinfo, &giarg, &zval))
+								{
+									zend_declare_property(target, g_base_info_get_name(f_info), strlen (g_base_info_get_name(f_info)),
+									                      &zval, ZEND_ACC_PUBLIC TSRMLS_DC);
+								}
+
+							g_base_info_unref(f_info);
+							g_base_info_unref(f_tinfo);
+						}
+
+					efree(phpclass);
+				}
+		}
+}
+
 void static gobject_girepository_load_function(GIBaseInfo *b_info TSRMLS_DC)
 {
 	char *phpname = namespaced_name(g_base_info_get_namespace(b_info), g_base_info_get_name(b_info), FALSE);
@@ -331,6 +382,7 @@ PHP_FUNCTION(GIRepository_load_ns)
 
 			case GI_INFO_TYPE_STRUCT:
 				// php_printf("-> struct %s\n", g_base_info_get_name(b_info));
+				gobject_girepository_load_struct(b_info TSRMLS_CC);
 			break;
 
 			case GI_INFO_TYPE_FUNCTION:
