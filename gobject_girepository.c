@@ -251,7 +251,6 @@ void static gobject_girepository_load_struct(GIStructInfo *s_info TSRMLS_DC)
 		{
 			gint fields;
 			gint i;
-			GIArgument giarg;
 
 			fields = g_struct_info_get_n_fields (s_info);
 			if (fields != 0)
@@ -278,14 +277,17 @@ void static gobject_girepository_load_struct(GIStructInfo *s_info TSRMLS_DC)
 						{
 							GIFieldInfo *f_info = g_struct_info_get_field (s_info, i);
 							GITypeInfo *f_tinfo = g_field_info_get_type (f_info);
-
+							GIArgument *giarg;
 							zval zval;
-							if (php_gobject_giarg_to_zval(f_tinfo, &giarg, &zval))
+
+							giarg = g_new0(GIArgument, 1);
+							if (php_gobject_giarg_to_zval(f_tinfo, giarg, &zval))
 								{
 									zend_declare_property(target, g_base_info_get_name(f_info), strlen (g_base_info_get_name(f_info)),
 									                      &zval, ZEND_ACC_PUBLIC TSRMLS_DC);
 								}
 
+							g_free(giarg);
 							g_base_info_unref(f_info);
 							g_base_info_unref(f_tinfo);
 						}

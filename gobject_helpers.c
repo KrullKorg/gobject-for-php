@@ -566,7 +566,14 @@ zend_bool php_gobject_giarg_to_zval(GITypeInfo *type_info, GIArgument *src, zval
 		break;
 
 		case GI_TYPE_TAG_UTF8:
-			ZVAL_STRING(return_value, src->v_pointer, 1);
+			if (src->v_pointer)
+				{
+					ZVAL_STRING(return_value, src->v_pointer, 1);
+				}
+			else
+				{
+					ZVAL_EMPTY_STRING(return_value);
+				}
 		break;
 
 		default:
