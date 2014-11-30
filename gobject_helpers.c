@@ -520,6 +520,81 @@ zend_bool php_gobject_zval_to_giarg(zval *zvalue, GIArgInfo *arg_info, GIArgumen
 	return TRUE;
 }
 
+zend_bool php_gobject_garray_to_zval(GITypeInfo *type_info, GArray *src, gint index, zval *return_value TSRMLS_DC)
+{
+	GITypeTag type_tag = g_type_info_get_tag(type_info);
+
+	guint size = g_array_get_element_size (src);
+	gpointer *value = g_memdup (src->data + (size * index), size);
+
+	switch (type_tag) {
+		case GI_TYPE_TAG_VOID:
+			ZVAL_NULL(return_value);
+		break;
+
+		case GI_TYPE_TAG_BOOLEAN:
+			//ZVAL_BOOL(return_value, (int)*value);
+			php_error(E_WARNING, "Conversion of this type (%s) is not implemented", g_type_tag_to_string(type_tag));
+			ZVAL_NULL(return_value);
+			return FALSE;
+		break;
+
+		case GI_TYPE_TAG_INT8:
+			ZVAL_LONG(return_value, (gint8)(*value));
+		break;
+
+		case GI_TYPE_TAG_UINT8:
+			ZVAL_LONG(return_value, (guint8)(*value));
+		break;
+
+		case GI_TYPE_TAG_INT16:
+			ZVAL_LONG(return_value, (gint16)(*value));
+		break;
+
+		case GI_TYPE_TAG_UINT16:
+			ZVAL_LONG(return_value, (guint16)(*value));
+		break;
+
+		case GI_TYPE_TAG_INT32:
+			ZVAL_LONG(return_value, (gint32)(*value));
+		break;
+
+		case GI_TYPE_TAG_UINT32:
+			ZVAL_LONG(return_value, (guint32)(*value));
+		break;
+
+		case GI_TYPE_TAG_INT64:
+			ZVAL_LONG(return_value, (gint64)(*value));
+		break;
+
+		case GI_TYPE_TAG_UINT64:
+			ZVAL_LONG(return_value, (guint64)(*value));
+		break;
+
+		case GI_TYPE_TAG_UTF8:
+			/*if (src->v_pointer)
+				{
+					ZVAL_STRING(return_value, src->v_pointer, 1);
+				}
+			else
+				{
+					ZVAL_EMPTY_STRING(return_value);
+				}*/
+			php_error(E_WARNING, "Conversion of this type (%s) is not implemented", g_type_tag_to_string(type_tag));
+			ZVAL_NULL(return_value);
+			return FALSE;
+		break;
+
+		default:
+			php_error(E_WARNING, "Conversion of this type (%s) is not implemented", g_type_tag_to_string(type_tag));
+			ZVAL_NULL(return_value);
+			return FALSE;
+		break;
+	}
+
+	return TRUE;
+}
+
 zend_bool php_gobject_giarg_to_zval(GITypeInfo *type_info, GIArgument *src, zval *return_value TSRMLS_DC)
 {
 	GITypeTag type_tag = g_type_info_get_tag(type_info);
@@ -573,6 +648,52 @@ zend_bool php_gobject_giarg_to_zval(GITypeInfo *type_info, GIArgument *src, zval
 			else
 				{
 					ZVAL_EMPTY_STRING(return_value);
+				}
+		break;
+
+		case GI_TYPE_TAG_ARRAY:
+			if (src->v_pointer)
+				{
+					switch (g_type_info_get_array_type (type_info)) {
+						case GI_ARRAY_TYPE_C:
+							php_error(E_WARNING, "Array type %u not implemented", g_type_info_get_array_type (type_info));
+							ZVAL_NULL(return_value);
+							return FALSE;
+						break;
+
+						case GI_ARRAY_TYPE_ARRAY:
+						{
+							GITypeInfo *element_info = g_type_info_get_param_type (type_info, 0);
+
+							gint i;
+							GArray *arr = (GArray *)src->v_pointer;
+							for (i = 0; i < arr->len; i++)
+								{
+									zval *temp;
+
+									ALLOC_INIT_ZVAL(temp);
+
+									if (php_gobject_garray_to_zval (element_info, arr, i, temp))
+										{
+											add_next_index_zval (return_value, temp);
+										}
+								}
+						}
+						break;
+
+						case GI_ARRAY_TYPE_PTR_ARRAY:
+						case GI_ARRAY_TYPE_BYTE_ARRAY:
+							php_error(E_WARNING, "Array type %u not implemented", g_type_info_get_array_type (type_info));
+							ZVAL_NULL(return_value);
+							return FALSE;
+						break;
+
+						default:
+							php_error(E_WARNING, "Unexpected array type %u", g_type_info_get_array_type (type_info));
+							ZVAL_NULL(return_value);
+							return FALSE;
+						break;
+					}
 				}
 		break;
 

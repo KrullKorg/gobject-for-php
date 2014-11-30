@@ -155,6 +155,12 @@ PHP_FUNCTION(gobject_universal_method)
 	GITypeInfo return_info;
 	g_callable_info_load_return_type((GICallableInfo*) m_info, &return_info);
 
+	GITypeTag type_tag = g_type_info_get_tag(&return_info);
+	if (type_tag == GI_TYPE_TAG_ARRAY)
+		{
+			/* it doesn't work if called inside php_gobject_giarg_to_zval */
+			array_init (return_value);
+		}
 	php_gobject_giarg_to_zval(&return_info, &ffi_return_value, return_value TSRMLS_CC);
 
 	// TODO: (+ out parameters)
@@ -278,16 +284,19 @@ void static gobject_girepository_load_struct(GIStructInfo *s_info TSRMLS_DC)
 							GIFieldInfo *f_info = g_struct_info_get_field (s_info, i);
 							GITypeInfo *f_tinfo = g_field_info_get_type (f_info);
 							GIArgument *giarg;
-							zval zval;
 
-							giarg = g_new0(GIArgument, 1);
-							if (php_gobject_giarg_to_zval(f_tinfo, giarg, &zval))
+							zval *temp;
+
+							ALLOC_INIT_ZVAL (temp)
+
+							giarg = g_new0 (GIArgument, 1);
+							if (php_gobject_giarg_to_zval(f_tinfo, giarg, temp))
 								{
 									zend_declare_property(target, g_base_info_get_name(f_info), strlen (g_base_info_get_name(f_info)),
-									                      &zval, ZEND_ACC_PUBLIC TSRMLS_DC);
+									                      temp, ZEND_ACC_PUBLIC TSRMLS_DC);
 								}
 
-							g_free(giarg);
+							g_free (giarg);
 							g_base_info_unref(f_info);
 							g_base_info_unref(f_tinfo);
 						}
